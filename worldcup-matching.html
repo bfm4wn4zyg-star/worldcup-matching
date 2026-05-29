@@ -104,6 +104,26 @@
     .level-name { font-size: 1.1rem; color: #fff; }
     .level-hint { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
     
+    /* Tools */
+    .tools {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px;
+    }
+    .tool-btn {
+      padding: 8px 16px;
+      background: rgba(255,215,0,0.2);
+      border: 1px solid rgba(255,215,0,0.4);
+      border-radius: 6px;
+      color: #ffd700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .tool-btn:hover {
+      background: rgba(255,215,0,0.3);
+    }
+    
     /* Progress */
     .progress-bar {
       position: fixed;
@@ -337,6 +357,12 @@
     <div class="match-grid" id="matchGrid"></div>
   </div>
   
+  <!-- Tools -->
+  <div class="tools" id="tools" style="display:none">
+    <button class="tool-btn" onclick="shuffleGrid()">🔀 洗牌</button>
+    <button class="tool-btn" onclick="showHint()">💡 提示</button>
+  </div>
+  
   <!-- Line Canvas -->
   <canvas class="line-canvas" id="lineCanvas"></canvas>
   
@@ -408,6 +434,7 @@ let remainingPairs = 0;
 let lineCanvas, lineCtx;
 let hintCells = [];
 let hintTimeout = null;
+let isAnimating = false;
 
 // ============ Init ============
 function init() {
@@ -429,6 +456,7 @@ function startGame() {
   document.getElementById('startScreen').classList.remove('active');
   document.getElementById('hud').style.display = 'flex';
   document.getElementById('progressBar').style.display = 'block';
+  document.getElementById('tools').style.display = 'flex';
   initLevel();
 }
 
@@ -682,6 +710,19 @@ function showHint() {
       }
     }
   }
+}
+
+function shuffleGrid() {
+  const cells = grid.filter(c => !c.empty && !c.matched);
+  const logos = cells.map(c => c.logo);
+  
+  for (let i = logos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [logos[i], logos[j]] = [logos[j], logos[i]];
+  }
+  
+  cells.forEach((c, i) => c.logo = logos[i]);
+  renderGrid();
 }
 
 function successLevel() {
