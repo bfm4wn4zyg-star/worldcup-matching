@@ -272,6 +272,8 @@
   </div>
 
 <script>
+console.log('Script starting...');
+
 // ============ 关卡配置 ============
 const LEVELS = [
   { rows: 4, cols: 6, name: '小组赛A组', time: 90 },
@@ -306,8 +308,11 @@ let hintCells = [];
 let hintTimeout = null;
 let lineCanvas, lineCtx;
 
+console.log('Constants defined...');
+
 // ============ 初始化 ============
 function init() {
+  console.log('init() called');
   lineCanvas = document.getElementById('lineCanvas');
   lineCtx = lineCanvas.getContext('2d');
   resizeCanvas();
@@ -319,8 +324,11 @@ function resizeCanvas() {
   lineCanvas.height = window.innerHeight;
 }
 
+console.log('init functions defined...');
+
 // ============ 游戏流程 ============
 function startGame() {
+  console.log('startGame() called');
   currentLevel = 0;
   matchCount = 0;
   document.getElementById('startScreen').classList.add('hidden');
@@ -330,6 +338,7 @@ function startGame() {
 }
 
 function initLevel() {
+  console.log('initLevel() called, currentLevel:', currentLevel);
   const config = LEVELS[currentLevel];
   
   document.getElementById('levelDisplay').textContent = `第${currentLevel + 1}关`;
@@ -354,21 +363,19 @@ function initLevel() {
 }
 
 function generateGrid(rows, cols) {
+  console.log('generateGrid() called', rows, 'x', cols);
   grid = [];
   const total = rows * cols;
   const pairs = total / 2;
   
-  // 创建配对
   let logos = [];
   for (let i = 0; i < pairs; i++) {
     const logo = TEAM_LOGOS[i % TEAM_LOGOS.length];
     logos.push(logo, logo);
   }
   
-  // 打乱顺序
   logos.sort(() => Math.random() - 0.5);
   
-  // 填充网格
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
       grid.push({
@@ -380,9 +387,11 @@ function generateGrid(rows, cols) {
       });
     }
   }
+  console.log('Grid generated, cells:', grid.length);
 }
 
 function renderGrid() {
+  console.log('renderGrid() called');
   const container = document.getElementById('matchGrid');
   const config = LEVELS[currentLevel];
   
@@ -396,43 +405,65 @@ function renderGrid() {
     
     if (!cell.empty) {
       el.innerHTML = `<div class="logo">${cell.logo}</div>`;
-      el.onclick = () => selectCell(idx);
+      el.onclick = function() { 
+        console.log('Cell clicked, idx:', idx);
+        selectCell(idx); 
+      };
     }
     
     container.appendChild(el);
   });
   
+  console.log('Grid rendered, cells in DOM:', container.children.length);
   updateProgress();
 }
 
+console.log('Game flow functions defined...');
+
 // ============ 选择与连接 ============
 function selectCell(idx) {
-  if (timerInterval === null) return;
+  console.log('selectCell called, idx:', idx, 'selected:', selected);
+  
+  if (timerInterval === null) {
+    console.log('timerInterval is null, returning');
+    return;
+  }
   
   const cell = grid[idx];
-  if (cell.empty || cell.matched) return;
+  console.log('cell:', cell);
+  
+  if (cell.empty || cell.matched) {
+    console.log('cell is empty or matched, returning');
+    return;
+  }
   
   const cellEl = document.querySelector(`.match-cell[data-idx="${idx}"]`);
+  console.log('cellEl:', cellEl);
   
   if (selected === null) {
+    console.log('First selection');
     selected = idx;
     cellEl.classList.add('selected');
     clearTimeout(hintTimeout);
     hintTimeout = setTimeout(() => showHint(), 3000);
   } else if (selected === idx) {
+    console.log('Deselect');
     selected = null;
     cellEl.classList.remove('selected');
     clearTimeout(hintTimeout);
   } else {
+    console.log('Second selection, checking match');
     const firstCell = grid[selected];
     const secondCell = cell;
+    console.log('firstCell.logo:', firstCell.logo, 'secondCell.logo:', secondCell.logo);
     
     if (firstCell.logo === secondCell.logo) {
-      console.log('Logos match! Checking path...');
+      console.log('Logos match, checking path...');
       const path = findPath(selected, idx);
       console.log('findPath returned:', path);
+      
       if (path) {
-        // 匹配成功
+        console.log('Path found, doing match!');
         const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
         drawPath(path);
         
@@ -461,7 +492,7 @@ function selectCell(idx) {
           if (remainingPairs === 0) successLevel();
         }, 200);
       } else {
-        // 图案相同但路径不通
+        console.log('No path found, shake');
         cellEl.classList.add('shake');
         const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
         firstEl.classList.add('shake');
@@ -471,7 +502,7 @@ function selectCell(idx) {
         }, 300);
       }
     } else {
-      // 图案不同
+      console.log('Logos do not match, shake');
       cellEl.classList.add('shake');
       const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
       firstEl.classList.add('shake');
@@ -482,13 +513,15 @@ function selectCell(idx) {
     }
     
     selected = null;
-    const selEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
     clearLine();
   }
 }
 
+console.log('selectCell defined...');
+
 // ============ 路径查找 (最多2个转弯) ============
 function findPath(idx1, idx2) {
+  console.log('findPath called', idx1, idx2);
   const config = LEVELS[currentLevel];
   const rows = config.rows;
   const cols = config.cols;
@@ -496,13 +529,18 @@ function findPath(idx1, idx2) {
   const cell1 = grid[idx1];
   const cell2 = grid[idx2];
   
-  if (cell1.logo !== cell2.logo) return null;
+  if (cell1.logo !== cell2.logo) {
+    console.log('Logos do not match');
+    return null;
+  }
   
   // 扩展网格坐标（原网格从1,1开始，边界外也可用）
   const r1 = cell1.row + 1;
   const c1 = cell1.col + 1;
   const r2 = cell2.row + 1;
   const c2 = cell2.col + 1;
+  
+  console.log('Coords:', r1, c1, '->', r2, c2);
   
   // 检查是否在边界外空白区域
   const isEmpty = (r, c) => {
@@ -534,38 +572,48 @@ function findPath(idx1, idx2) {
   };
   
   // 1. 直接连接（0转弯）
+  console.log('Checking direct line...');
   if (lineClear(r1, c1, r2, c2)) {
+    console.log('Direct line clear!');
     return [[r1, c1], [r2, c2]];
   }
   
   // 2. 一个转弯
-  // 拐角1: (r1, c2)
+  console.log('Checking one turn...');
   if (isEmpty(r1, c2) && lineClear(r1, c1, r1, c2) && lineClear(r1, c2, r2, c2)) {
+    console.log('One turn via (r1, c2)');
     return [[r1, c1], [r1, c2], [r2, c2]];
   }
-  // 拐角2: (r2, c1)
   if (isEmpty(r2, c1) && lineClear(r1, c1, r2, c1) && lineClear(r2, c1, r2, c2)) {
+    console.log('One turn via (r2, c1)');
     return [[r1, c1], [r2, c1], [r2, c2]];
   }
   
   // 3. 两个转弯 - 水平→竖直→水平
+  console.log('Checking two turns horizontal...');
   for (let c = 0; c <= cols + 1; c++) {
     if (c === c1 || c === c2) continue;
     if (isEmpty(r1, c) && lineClear(r1, c1, r1, c) && isEmpty(r2, c) && lineClear(r2, c2, r2, c) && lineClear(r1, c, r2, c)) {
+      console.log('Two turns found via c=', c);
       return [[r1, c1], [r1, c], [r2, c], [r2, c2]];
     }
   }
   
   // 4. 两个转弯 - 竖直→水平→竖直
+  console.log('Checking two turns vertical...');
   for (let r = 0; r <= rows + 1; r++) {
     if (r === r1 || r === r2) continue;
     if (isEmpty(r, c1) && lineClear(r1, c1, r, c1) && isEmpty(r, c2) && lineClear(r2, c2, r, c2) && lineClear(r, c1, r, c2)) {
+      console.log('Two turns found via r=', r);
       return [[r1, c1], [r, c1], [r, c2], [r2, c2]];
     }
   }
   
+  console.log('No path found');
   return null;
 }
+
+console.log('findPath defined...');
 
 // ============ 画连接线 ============
 function drawPath(path) {
@@ -579,13 +627,11 @@ function drawPath(path) {
   const cellSize = 50;
   const gap = 5;
   
-  // 计算网格起始位置
   const totalWidth = config.cols * cellSize + (config.cols - 1) * gap;
   const totalHeight = config.rows * cellSize + (config.rows - 1) * gap;
   const startX = rect.left + (rect.width - totalWidth) / 2;
   const startY = rect.top + (rect.height - totalHeight) / 2;
   
-  // 转换扩展网格坐标到屏幕坐标
   const toScreen = (r, c) => {
     const gridX = startX + (c - 1) * (cellSize + gap) + cellSize / 2;
     const gridY = startY + (r - 1) * (cellSize + gap) + cellSize / 2;
@@ -661,7 +707,6 @@ function shuffleGrid() {
   
   renderGrid();
   
-  // 清除提示
   if (hintCells.length > 0) {
     hintCells.forEach(idx => {
       const el = document.querySelector(`.match-cell[data-idx="${idx}"]`);
@@ -708,7 +753,9 @@ function backToStart() {
   timerInterval = null;
 }
 
+console.log('All functions defined, calling init...');
 init();
+console.log('Init done');
 </script>
 </body>
 </html>
