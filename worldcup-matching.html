@@ -787,6 +787,7 @@ function retryLevel() {
 }
 
 function shareResult() {
+  alert('分享按钮被点击了！');
   document.getElementById('shareLevel').textContent = `第${currentLevel + 1}关 · ${LEVEL_CONFIGS[currentLevel].name}`;
   document.getElementById('shareScore').textContent = document.getElementById('statScore').textContent;
   document.getElementById('shareLabel').textContent = `配对 ${matchCount} 次`;
