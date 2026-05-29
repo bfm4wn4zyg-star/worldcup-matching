@@ -428,6 +428,7 @@ function selectCell(idx) {
     const secondCell = cell;
     
     if (firstCell.logo === secondCell.logo) {
+      console.log('Logos match! Checking path...');
       const path = findPath(selected, idx);
       console.log('findPath returned:', path);
       if (path) {
