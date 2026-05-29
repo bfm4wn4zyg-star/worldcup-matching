@@ -3,309 +3,293 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>🔗 世界杯连连看</title>
+  <title>世界杯连连看</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
       min-height: 100vh;
-      overflow: hidden;
-      touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
       color: #fff;
+      overflow-x: hidden;
     }
-    
-    .screen { display: none; }
-    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    
-    .start-screen {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, #1a1a2e, #16213e);
-      z-index: 100;
-    }
-    .start-icon { font-size: 5rem; margin-bottom: 16px; animation: bounce 1.5s ease-in-out infinite; }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .start-title {
-      font-size: 2.2rem;
-      font-weight: bold;
-      background: linear-gradient(90deg, #ffd700, #ff8c00);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
-    }
-    .start-subtitle {
-      color: rgba(255,255,255,0.6);
-      font-size: 0.9rem;
-      margin-bottom: 24px;
+    .header {
       text-align: center;
-      line-height: 1.6;
+      padding: 20px;
+      background: rgba(0,0,0,0.3);
     }
-    .start-rules {
-      color: rgba(255,255,255,0.5);
-      font-size: 0.85rem;
-      text-align: center;
-      max-width: 300px;
-      line-height: 1.6;
-      margin-bottom: 30px;
+    .header h1 {
+      font-size: 28px;
+      color: #ffd700;
+      text-shadow: 0 0 20px rgba(255,215,0,0.5);
     }
-    .start-btn {
-      padding: 16px 48px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #1a1a2e;
-      background: linear-gradient(135deg, #ffd700, #ff8c00);
-      border: none;
-      border-radius: 50px;
-      cursor: pointer;
-      box-shadow: 0 8px 30px rgba(255,200,0,0.3);
-    }
-    
     .hud {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      padding: 12px 20px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 50;
-      background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+      justify-content: space-around;
+      padding: 15px;
+      background: rgba(0,0,0,0.4);
+      margin: 10px;
+      border-radius: 12px;
     }
-    .hud-item { display: flex; align-items: center; gap: 6px; }
-    .hud-icon { font-size: 1rem; }
-    .hud-value { font-size: 1.1rem; font-weight: bold; color: #ffd700; }
-    .hud-label { font-size: 0.7rem; color: rgba(255,255,255,0.5); }
-    
-    .level-info { text-align: center; }
-    .level-name { font-size: 1rem; color: #fff; }
-    .level-hint { font-size: 0.7rem; color: rgba(255,255,255,0.4); }
-    
-    .progress-bar {
-      position: fixed;
-      top: 55px;
-      left: 20px;
-      right: 20px;
-      height: 5px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ffd700, #ff8c00);
-      transition: width 0.3s ease;
-    }
-    
+    .hud-item { text-align: center; }
+    .hud-label { font-size: 12px; color: #aaa; margin-bottom: 4px; }
+    .hud-value { font-size: 20px; font-weight: bold; color: #ffd700; }
     .game-container {
-      position: fixed;
-      top: 75px;
-      left: 0;
-      right: 0;
-      bottom: 80px;
       display: flex;
-      align-items: center;
       justify-content: center;
-      padding: 10px;
-      overflow: auto;
+      align-items: center;
+      padding: 20px;
+      position: relative;
     }
-    
-    .match-grid {
+    #matchGrid {
       display: grid;
       gap: 5px;
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      border-radius: 12px;
+      border: 2px solid rgba(255,215,0,0.3);
     }
-    
     .match-cell {
       width: 50px;
       height: 50px;
-      background: linear-gradient(145deg, #2a3a5a, #1a2a4a);
-      border: 2px solid rgba(255,255,255,0.1);
+      background: linear-gradient(145deg, #2a2a4a, #1a1a3a);
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.2s;
+      font-size: 28px;
+      border: 1px solid rgba(255,215,0,0.2);
       position: relative;
     }
-    .match-cell:hover { transform: scale(1.05); border-color: rgba(255,215,0,0.4); }
-    .match-cell.selected {
-      border-color: #ffd700;
-      background: linear-gradient(145deg, #3a4a6a, #2a3a5a);
-      box-shadow: 0 0 20px rgba(255,215,0,0.5);
-      transform: scale(1.1);
+    .match-cell:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 15px rgba(255,215,0,0.4);
     }
-    .match-cell.matched { animation: matchPop 0.4s ease forwards; }
-    @keyframes matchPop {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.3); opacity: 0.8; }
-      100% { transform: scale(0); opacity: 0; }
+    .match-cell.selected {
+      background: linear-gradient(145deg, #3a3a5a, #2a2a4a);
+      box-shadow: 0 0 20px rgba(255,215,0,0.6);
+      border-color: #ffd700;
+    }
+    .match-cell.matched {
+      background: rgba(255,215,0,0.2);
+      animation: matchPulse 0.4s ease;
+    }
+    .match-cell.shake {
+      animation: shake 0.3s ease;
     }
     .match-cell.empty {
-      background: rgba(255,255,255,0.03);
-      border-color: rgba(255,255,255,0.05);
+      background: transparent;
+      border: none;
       pointer-events: none;
     }
-    .match-cell .logo { font-size: 1.5rem; }
-    .match-cell.selected .logo { transform: scale(1.1); }
-    
-    @keyframes hintPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.5); }
-      50% { box-shadow: 0 0 0 6px rgba(255,215,0,0); }
+    .match-cell.hint-active {
+      animation: hintPulse 0.5s ease infinite alternate;
     }
-    .hint-active { animation: hintPulse 1s ease infinite; }
-    
-    .tools-bar {
-      position: fixed;
-      bottom: 15px;
-      left: 50%;
-      transform: translateX(-50%);
+    @keyframes matchPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    @keyframes hintPulse {
+      0% { box-shadow: 0 0 5px rgba(255,215,0,0.5); }
+      100% { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+    }
+    .tools {
       display: flex;
-      gap: 12px;
-      z-index: 40;
+      justify-content: center;
+      gap: 15px;
+      padding: 15px;
     }
     .tool-btn {
       padding: 10px 20px;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 20px;
-      color: #fff;
-      font-size: 0.85rem;
+      background: rgba(255,215,0,0.2);
+      border: 1px solid rgba(255,215,0,0.4);
+      border-radius: 8px;
+      color: #ffd700;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 14px;
+      transition: all 0.2s;
     }
-    .tool-btn:hover { background: rgba(255,255,255,0.2); }
-    
-    .line-canvas {
+    .tool-btn:hover {
+      background: rgba(255,215,0,0.3);
+    }
+    .progress-bar {
+      width: 80%;
+      max-width: 400px;
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      margin: 0 auto 20px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      transition: width 0.3s;
+    }
+    #lineCanvas {
       position: fixed;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       pointer-events: none;
-      z-index: 30;
+      z-index: 1000;
     }
-    
-    .result-screen {
+    .screen {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.95);
-      z-index: 200;
-      display: none;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      z-index: 100;
     }
-    .result-screen.active { display: flex; }
-    .result-icon { font-size: 4rem; margin-bottom: 16px; }
-    .result-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 8px; }
-    .result-title.success { color: #ffd700; }
-    .result-title.fail { color: #ff4444; }
-    .result-message { color: rgba(255,255,255,0.6); margin-bottom: 24px; }
-    .result-stats { display: flex; gap: 16px; margin-bottom: 24px; }
-    .stat-box { text-align: center; padding: 12px 20px; background: rgba(255,255,255,0.05); border-radius: 10px; }
-    .stat-value { font-size: 1.5rem; font-weight: bold; color: #ffd700; }
-    .stat-label { font-size: 0.7rem; color: rgba(255,255,255,0.5); }
-    .result-actions { display: flex; gap: 12px; }
-    .result-btn { padding: 12px 24px; font-size: 0.9rem; font-weight: bold; border: none; border-radius: 25px; cursor: pointer; }
-    .result-btn.primary { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #1a1a2e; }
-    .result-btn.secondary { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); }
-    
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-4px); }
-      75% { transform: translateX(4px); }
+    .screen.hidden { display: none; }
+    .screen h2 {
+      font-size: 32px;
+      color: #ffd700;
+      margin-bottom: 20px;
     }
-    .shake { animation: shake 0.3s ease; }
+    .screen p {
+      font-size: 16px;
+      color: #aaa;
+      margin-bottom: 30px;
+    }
+    .start-btn {
+      padding: 15px 40px;
+      font-size: 18px;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      border: none;
+      border-radius: 12px;
+      color: #1a1a2e;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .start-btn:hover { transform: scale(1.05); }
+    .result-screen h2 { font-size: 28px; }
+    .result-screen .stats {
+      display: flex;
+      gap: 30px;
+      margin: 20px 0;
+    }
+    .result-screen .stat {
+      text-align: center;
+    }
+    .result-screen .stat-value {
+      font-size: 24px;
+      color: #ffd700;
+      font-weight: bold;
+    }
+    .result-screen .stat-label {
+      font-size: 12px;
+      color: #888;
+    }
+    .result-btn {
+      padding: 12px 30px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .result-btn.primary {
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #1a1a2e;
+      font-weight: bold;
+    }
+    .result-btn.secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
   </style>
 </head>
 <body>
-  <div class="start-screen screen active" id="startScreen">
-    <div class="start-icon">🔗</div>
-    <div class="start-title">世界杯连连看</div>
-    <div class="start-subtitle">
-      连接两个相同的球队徽章<br>
-      最多转2次弯就能消除
-    </div>
-    <div class="start-rules">
-      📖 游戏规则：<br>
-      两块相同徽章可以用线连起来<br>
-      线条最多转2个弯<br>
-      中间不能穿过其他徽章<br>
-      消除所有徽章即过关
-    </div>
+  <canvas id="lineCanvas"></canvas>
+  
+  <div id="startScreen" class="screen">
+    <h1>🏆 世界杯连连看 🏆</h1>
+    <p>找出相同的国旗并连接它们<br>规则：只能拐弯2次以内</p>
     <button class="start-btn" onclick="startGame()">开始挑战</button>
   </div>
   
-  <div class="hud" id="hud" style="display:none">
-    <div class="hud-item">
-      <span class="hud-icon">🏆</span>
-      <div>
-        <div class="hud-value" id="levelDisplay">第1关</div>
+  <div id="gameScreen" class="screen hidden">
+    <div class="header">
+      <h1>⚽ 世界杯连连看 ⚽</h1>
+    </div>
+    <div class="hud">
+      <div class="hud-item">
         <div class="hud-label">关卡</div>
+        <div class="hud-value" id="levelDisplay">第1关</div>
       </div>
-    </div>
-    <div class="level-info">
-      <div class="level-name" id="levelName">小组赛A组</div>
-      <div class="level-hint" id="levelHint">剩余 16 对</div>
-    </div>
-    <div class="hud-item">
-      <span class="hud-icon">⏱️</span>
-      <div>
+      <div class="hud-item">
+        <div class="hud-label">剩余</div>
+        <div class="hud-value" id="hintDisplay">0对</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">时间</div>
         <div class="hud-value" id="timeDisplay">90</div>
-        <div class="hud-label">秒</div>
       </div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+    </div>
+    <div class="game-container">
+      <div id="matchGrid"></div>
+    </div>
+    <div class="tools">
+      <button class="tool-btn" onclick="showHint()">💡 提示</button>
+      <button class="tool-btn" onclick="shuffleGrid()">🔀 洗牌</button>
     </div>
   </div>
   
-  <div class="progress-bar" id="progressBar" style="display:none">
-    <div class="progress-fill" id="progressFill"></div>
-  </div>
-  
-  <div class="game-container" id="gameContainer">
-    <div class="match-grid" id="matchGrid"></div>
-  </div>
-  
-  <div class="tools-bar" id="toolsBar" style="display:none">
-    <button class="tool-btn" onclick="showHint()">💡 提示</button>
-    <button class="tool-btn" onclick="shuffleGrid()">🔀 洗牌</button>
-  </div>
-  
-  <canvas class="line-canvas" id="lineCanvas"></canvas>
-  
-  <div class="result-screen" id="resultScreen">
-    <div class="result-icon" id="resultIcon">🏆</div>
-    <div class="result-title" id="resultTitle">通关成功！</div>
-    <div class="result-message" id="resultMessage"></div>
-    <div class="result-stats">
-      <div class="stat-box">
+  <div id="resultScreen" class="screen result-screen hidden">
+    <h2 id="resultTitle">通关成功！</h2>
+    <div class="stats">
+      <div class="stat">
         <div class="stat-value" id="statTime">0s</div>
         <div class="stat-label">用时</div>
       </div>
-      <div class="stat-box">
+      <div class="stat">
         <div class="stat-value" id="statMatches">0</div>
-        <div class="stat-label">配对</div>
+        <div class="stat-label">配对数</div>
       </div>
     </div>
-    <div class="result-actions">
-      <button class="result-btn primary" id="nextBtn" onclick="nextLevel()">下一关 →</button>
-      <button class="result-btn secondary" onclick="backToStart()">返回</button>
-    </div>
+    <button class="result-btn primary" onclick="nextLevel()">下一关 →</button>
+    <button class="result-btn secondary" onclick="backToStart()">返回主页</button>
   </div>
 
 <script>
-// ============ 数据配置 ============
-const TEAM_LOGOS = ["🇧🇷","🇩🇪","🇫🇷","🇦🇷","🏴󠁧󠁢󠁥󠁮󠁧󠁿","🇪🇸","🇵🇹","🇳🇱","🇧🇪","🇭🇷","🇩🇰","🇮🇹","🇺🇾","🇲🇦","🇯🇵","🇰🇷","🇺🇸","🇨🇦","🇦🇺","🇸🇦","🇮🇷","🇲🇽","🇵🇱","🇸🇳","🇬🇭","🇨🇭","🇸🇰","🇨🇱","🇨🇴","🇵🇪","🇸🇾","🇨🇮"];
-
+// ============ 关卡配置 ============
 const LEVELS = [
-  { rows: 4, cols: 6, name: "小组赛A组", time: 90 },
-  { rows: 4, cols: 6, name: "小组赛B组", time: 80 },
-  { rows: 5, cols: 6, name: "小组赛C组", time: 75 },
-  { rows: 5, cols: 6, name: "小组赛D组", time: 70 },
-  { rows: 5, cols: 8, name: "16强淘汰赛", time: 65 },
-  { rows: 6, cols: 8, name: "8强淘汰赛", time: 60 },
-  { rows: 6, cols: 10, name: "半决赛", time: 55 },
-  { rows: 7, cols: 10, name: "决赛", time: 50 },
+  { rows: 4, cols: 6, name: '小组赛A组', time: 90 },
+  { rows: 4, cols: 6, name: '小组赛B组', time: 80 },
+  { rows: 5, cols: 6, name: '小组赛C组', time: 75 },
+  { rows: 5, cols: 6, name: '小组赛D组', time: 70 },
+  { rows: 5, cols: 8, name: '16强淘汰赛', time: 65 },
+  { rows: 6, cols: 8, name: '8强淘汰赛', time: 60 },
+  { rows: 6, cols: 10, name: '半决赛', time: 55 },
+  { rows: 7, cols: 10, name: '决赛', time: 50 },
+];
+
+// 世界杯参赛国国旗
+const TEAM_LOGOS = [
+  '🇧🇷', '🇦🇷', '🇫🇷', '🇩🇪', '🇪🇸', '🇵🇹', '🇬🇧', '🇮🇹',
+  '🇳🇱', '🇧🇪', '🇭🇷', '🇩🇰', '🇵🇱', '🇨🇭', '🇦🇹', '🇺🇾',
+  '🇲🇽', '🇺🇸', '🇨🇦', '🇯🇵', '🇰🇷', '🇮🇷', '🇸🇦', '🇦🇺',
+  '🇸🇳', '🇲🇦', '🇪🇬', '🇬🇭', '🇵🇰', '🇮🇳', '🇮🇩', '🇹🇭'
 ];
 
 // ============ 游戏状态 ============
@@ -318,14 +302,16 @@ let timeLeft = 90;
 let timerInterval = null;
 let totalPairs = 0;
 let remainingPairs = 0;
+let hintCells = [];
+let hintTimeout = null;
 let lineCanvas, lineCtx;
 
 // ============ 初始化 ============
 function init() {
-  lineCanvas = document.getElementById("lineCanvas");
-  lineCtx = lineCanvas.getContext("2d");
+  lineCanvas = document.getElementById('lineCanvas');
+  lineCtx = lineCanvas.getContext('2d');
   resizeCanvas();
-  window.addEventListener("resize", resizeCanvas);
+  window.addEventListener('resize', resizeCanvas);
 }
 
 function resizeCanvas() {
@@ -337,22 +323,19 @@ function resizeCanvas() {
 function startGame() {
   currentLevel = 0;
   matchCount = 0;
-  document.getElementById("startScreen").classList.remove("active");
-  document.getElementById("hud").style.display = "flex";
-  document.getElementById("progressBar").style.display = "block";
-  document.getElementById("toolsBar").style.display = "flex";
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
   initLevel();
 }
 
 function initLevel() {
   const config = LEVELS[currentLevel];
   
-  document.getElementById("levelDisplay").textContent = `第${currentLevel + 1}关`;
-  document.getElementById("levelName").textContent = config.name;
-  document.getElementById("levelHint").textContent = `剩余 ${remainingPairs} 对`;
+  document.getElementById('levelDisplay').textContent = `第${currentLevel + 1}关`;
+  document.getElementById('hintDisplay').textContent = `${remainingPairs}对`;
   timeLeft = config.time;
-  document.getElementById("timeDisplay").textContent = timeLeft;
-  document.getElementById("timeDisplay").style.color = "#ffd700";
+  document.getElementById('timeDisplay').textContent = timeLeft;
   
   generateGrid(config.rows, config.cols);
   totalPairs = grid.length / 2;
@@ -361,13 +344,13 @@ function initLevel() {
   clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     timeLeft--;
-    document.getElementById("timeDisplay").textContent = timeLeft;
-    if (timeLeft <= 10) document.getElementById("timeDisplay").style.color = "#ff4444";
+    document.getElementById('timeDisplay').textContent = timeLeft;
     if (timeLeft <= 0) failLevel();
   }, 1000);
   
   startTime = Date.now();
   renderGrid();
+  updateProgress();
 }
 
 function generateGrid(rows, cols) {
@@ -392,6 +375,7 @@ function generateGrid(rows, cols) {
         row: i,
         col: j,
         logo: logos[i * cols + j],
+        matched: false,
         empty: false
       });
     }
@@ -399,15 +383,15 @@ function generateGrid(rows, cols) {
 }
 
 function renderGrid() {
-  const container = document.getElementById("matchGrid");
+  const container = document.getElementById('matchGrid');
   const config = LEVELS[currentLevel];
   
   container.style.gridTemplateColumns = `repeat(${config.cols}, 50px)`;
-  container.innerHTML = "";
+  container.innerHTML = '';
   
   grid.forEach((cell, idx) => {
-    const el = document.createElement("div");
-    el.className = "match-cell" + (cell.empty ? " empty" : "");
+    const el = document.createElement('div');
+    el.className = 'match-cell' + (cell.empty ? ' empty' : '');
     el.dataset.idx = idx;
     
     if (!cell.empty) {
@@ -421,66 +405,83 @@ function renderGrid() {
   updateProgress();
 }
 
+// ============ 选择与连接 ============
 function selectCell(idx) {
   if (timerInterval === null) return;
+  
   const cell = grid[idx];
-  if (cell.empty) return;
+  if (cell.empty || cell.matched) return;
   
   const cellEl = document.querySelector(`.match-cell[data-idx="${idx}"]`);
   
   if (selected === null) {
     selected = idx;
-    cellEl.classList.add("selected");
+    cellEl.classList.add('selected');
+    clearTimeout(hintTimeout);
+    hintTimeout = setTimeout(() => showHint(), 3000);
   } else if (selected === idx) {
     selected = null;
-    cellEl.classList.remove("selected");
+    cellEl.classList.remove('selected');
+    clearTimeout(hintTimeout);
   } else {
-    // 检查是否可以连接
-    const path = findPath(selected, idx);
+    const firstCell = grid[selected];
+    const secondCell = cell;
     
-    if (path) {
-      // 可以连接
-      const firstCell = grid[selected];
-      const secondCell = cell;
-      
-      // 画连接线
-      drawPath(path);
-      
-      setTimeout(() => {
-        firstCell.empty = true;
-        secondCell.empty = true;
-        
+    if (firstCell.logo === secondCell.logo) {
+      // 检查路径是否可行
+      const path = findPath(selected, idx);
+      if (path) {
+        // 匹配成功
         const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
-        firstEl.classList.remove("selected");
-        firstEl.classList.add("matched");
-        cellEl.classList.add("matched");
+        drawPath(path);
         
         setTimeout(() => {
-          firstEl.classList.add("empty");
-          firstEl.innerHTML = "";
-          cellEl.classList.add("empty");
-          cellEl.innerHTML = "";
-        }, 400);
-        
-        matchCount++;
-        remainingPairs--;
-        document.getElementById("levelHint").textContent = `剩余 ${remainingPairs} 对`;
-        updateProgress();
-        
-        if (remainingPairs === 0) successLevel();
-      }, 200);
+          firstCell.matched = true;
+          secondCell.matched = true;
+          firstCell.empty = true;
+          secondCell.empty = true;
+          
+          firstEl.classList.remove('selected');
+          firstEl.classList.add('matched');
+          cellEl.classList.add('matched');
+          
+          setTimeout(() => {
+            firstEl.classList.add('empty');
+            firstEl.innerHTML = '';
+            cellEl.classList.add('empty');
+            cellEl.innerHTML = '';
+          }, 400);
+          
+          matchCount++;
+          remainingPairs--;
+          document.getElementById('hintDisplay').textContent = `${remainingPairs}对`;
+          updateProgress();
+          
+          if (remainingPairs === 0) successLevel();
+        }, 200);
+      } else {
+        // 图案相同但路径不通
+        cellEl.classList.add('shake');
+        const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
+        firstEl.classList.add('shake');
+        setTimeout(() => {
+          cellEl.classList.remove('shake');
+          firstEl.classList.remove('shake');
+        }, 300);
+      }
     } else {
-      // 不能连接 - 提示并抖动
-      cellEl.classList.add("shake");
+      // 图案不同
+      cellEl.classList.add('shake');
       const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
-      firstEl.classList.add("shake");
+      firstEl.classList.add('shake');
       setTimeout(() => {
-        cellEl.classList.remove("shake");
-        firstEl.classList.remove("shake");
+        cellEl.classList.remove('shake');
+        firstEl.classList.remove('shake');
       }, 300);
     }
     
     selected = null;
+    const selEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
     clearLine();
   }
 }
@@ -494,40 +495,25 @@ function findPath(idx1, idx2) {
   const cell1 = grid[idx1];
   const cell2 = grid[idx2];
   
-  // 图案不同，不能连接
   if (cell1.logo !== cell2.logo) return null;
   
-  // 扩展网格坐标（原网格从1,1开始）
+  // 扩展网格坐标（原网格从1,1开始，边界外也可用）
   const r1 = cell1.row + 1;
   const c1 = cell1.col + 1;
   const r2 = cell2.row + 1;
   const c2 = cell2.col + 1;
   
-  console.log(`findPath: idx1=${idx1}(r${cell1.row},c${cell1.col}), idx2=${idx2}(r${cell2.row},c${cell2.col})`);
-  console.log(`  Extended coords: r1=${r1},c1=${c1}, r2=${r2},c2=${c2}`);
-  console.log(`  Same row? ${r1 === r2}, Same col? ${c1 === c2}`);
-  console.log(`  logos: "${cell1.logo}" vs "${cell2.logo}"`);
-  
-  // 检查两点是否在边界外（扩展网格坐标）
+  // 检查是否在边界外空白区域
   const isEmpty = (r, c) => {
-    console.log(`isEmpty called: r=${r}, c=${c}, rows=${rows}, cols=${cols}`);
-    if (r < 0 || r > rows + 1 || c < 0 || c > cols + 1) {
-      console.log(`  -> false: out of bounds`);
-      return false;
-    }
-    if (r === 0 || r === rows + 1 || c === 0 || c === cols + 1) {
-      console.log(`  -> true: boundary`);
-      return true; // 边界外空白
-    }
-    const inside = grid[(r - 1) * cols + (c - 1)].empty;
-    console.log(`  -> ${inside}: inside grid at idx=${(r - 1) * cols + (c - 1)}`);
-    return inside;
+    if (r < 0 || r > rows + 1 || c < 0 || c > cols + 1) return false;
+    if (r === 0 || r === rows + 1 || c === 0 || c === cols + 1) return true;
+    return grid[(r - 1) * cols + (c - 1)].empty;
   };
   
-  // 检查直线是否通畅（从点1到点2，不包括起点和终点）
+  // 检查两点间直线是否通畅（不包括端点）
   const lineClear = (r1, c1, r2, c2) => {
     if (r1 === r2 && c1 === c2) return true;
-    if (r1 === r2) { // 同一行
+    if (r1 === r2) {
       const minC = Math.min(c1, c2);
       const maxC = Math.max(c1, c2);
       for (let c = minC + 1; c < maxC; c++) {
@@ -535,7 +521,7 @@ function findPath(idx1, idx2) {
       }
       return true;
     }
-    if (c1 === c2) { // 同一列
+    if (c1 === c2) {
       const minR = Math.min(r1, r2);
       const maxR = Math.max(r1, r2);
       for (let r = minR + 1; r < maxR; r++) {
@@ -547,14 +533,11 @@ function findPath(idx1, idx2) {
   };
   
   // 1. 直接连接（0转弯）
-  console.log(`Checking direct line clear...`);
   if (lineClear(r1, c1, r2, c2)) {
-    console.log(`  -> Direct connection possible!`);
     return [[r1, c1], [r2, c2]];
   }
-  console.log(`  -> Direct connection NOT possible`);
   
-  // 2. 一个转弯 - 检查两个拐角
+  // 2. 一个转弯
   // 拐角1: (r1, c2)
   if (isEmpty(r1, c2) && lineClear(r1, c1, r1, c2) && lineClear(r1, c2, r2, c2)) {
     return [[r1, c1], [r1, c2], [r2, c2]];
@@ -564,8 +547,7 @@ function findPath(idx1, idx2) {
     return [[r1, c1], [r2, c1], [r2, c2]];
   }
   
-  // 3. 两个转弯 - 尝试所有可能的中间点
-  // 3.1 先水平移动，再竖直移动，再水平移动
+  // 3. 两个转弯 - 水平→竖直→水平
   for (let c = 0; c <= cols + 1; c++) {
     if (c === c1 || c === c2) continue;
     if (isEmpty(r1, c) && lineClear(r1, c1, r1, c) && isEmpty(r2, c) && lineClear(r2, c2, r2, c) && lineClear(r1, c, r2, c)) {
@@ -573,7 +555,7 @@ function findPath(idx1, idx2) {
     }
   }
   
-  // 3.2 先竖直移动，再水平移动，再竖直移动
+  // 4. 两个转弯 - 竖直→水平→竖直
   for (let r = 0; r <= rows + 1; r++) {
     if (r === r1 || r === r2) continue;
     if (isEmpty(r, c1) && lineClear(r1, c1, r, c1) && isEmpty(r, c2) && lineClear(r2, c2, r, c2) && lineClear(r, c1, r, c2)) {
@@ -581,62 +563,52 @@ function findPath(idx1, idx2) {
     }
   }
   
-  return null; // 无法连接
+  return null;
 }
 
+// ============ 画连接线 ============
 function drawPath(path) {
   if (!path || path.length < 2) return;
   
   lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
   
-  // 把扩展网格坐标转回屏幕坐标
+  const container = document.getElementById('matchGrid');
+  const rect = container.getBoundingClientRect();
+  const config = LEVELS[currentLevel];
   const cellSize = 50;
   const gap = 5;
-  const config = LEVELS[currentLevel];
   
-  const getScreenPos = (r, c) => {
-    // r, c 是扩展网格中的坐标（0开始，边界外-1）
-    // 实际网格从(1,1)开始
-    const container = document.getElementById("matchGrid");
-    const rect = container.getBoundingClientRect();
-    
-    // 计算每个格子的实际大小
-    const totalWidth = config.cols * cellSize + (config.cols - 1) * gap;
-    const totalHeight = config.rows * cellSize + (config.rows - 1) * gap;
-    
-    const startX = rect.left + (rect.width - totalWidth) / 2;
-    const startY = rect.top + (rect.height - totalHeight) / 2;
-    
-    // 扩展网格坐标转实际网格坐标
-    const realR = r - 1;
-    const realC = c - 1;
-    
-    return {
-      x: startX + realC * (cellSize + gap) + cellSize / 2,
-      y: startY + realR * (cellSize + gap) + cellSize / 2
-    };
+  // 计算网格起始位置
+  const totalWidth = config.cols * cellSize + (config.cols - 1) * gap;
+  const totalHeight = config.rows * cellSize + (config.rows - 1) * gap;
+  const startX = rect.left + (rect.width - totalWidth) / 2;
+  const startY = rect.top + (rect.height - totalHeight) / 2;
+  
+  // 转换扩展网格坐标到屏幕坐标
+  const toScreen = (r, c) => {
+    const gridX = startX + (c - 1) * (cellSize + gap) + cellSize / 2;
+    const gridY = startY + (r - 1) * (cellSize + gap) + cellSize / 2;
+    return [gridX, gridY];
   };
   
-  // 绘制折线
   lineCtx.beginPath();
-  lineCtx.strokeStyle = "#ffd700";
-  lineCtx.lineWidth = 4;
-  lineCtx.lineCap = "round";
-  lineCtx.lineJoin = "round";
-  lineCtx.shadowColor = "#ffd700";
-  lineCtx.shadowBlur = 15;
-  
-  const first = getScreenPos(path[0][0], path[0][1]);
-  lineCtx.moveTo(first.x, first.y);
+  const [sx, sy] = toScreen(path[0][0], path[0][1]);
+  lineCtx.moveTo(sx, sy);
   
   for (let i = 1; i < path.length; i++) {
-    const pos = getScreenPos(path[i][0], path[i][1]);
-    lineCtx.lineTo(pos.x, pos.y);
+    const [ex, ey] = toScreen(path[i][0], path[i][1]);
+    lineCtx.lineTo(ex, ey);
   }
   
+  lineCtx.strokeStyle = '#ffd700';
+  lineCtx.lineWidth = 4;
+  lineCtx.lineCap = 'round';
+  lineCtx.lineJoin = 'round';
+  lineCtx.shadowColor = '#ffd700';
+  lineCtx.shadowBlur = 15;
   lineCtx.stroke();
   
-  setTimeout(() => clearLine(), 300);
+  setTimeout(() => lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height), 400);
 }
 
 function clearLine() {
@@ -645,102 +617,94 @@ function clearLine() {
 
 function updateProgress() {
   const progress = ((totalPairs - remainingPairs) / totalPairs) * 100;
-  document.getElementById("progressFill").style.width = progress + "%";
+  document.getElementById('progressFill').style.width = progress + '%';
 }
 
-// ============ 提示和洗牌 ============
 function showHint() {
-  const unmatched = grid.filter(c => !c.empty);
+  const unmatched = grid.filter(c => !c.empty && !c.matched);
   
   for (let i = 0; i < unmatched.length; i++) {
     for (let j = i + 1; j < unmatched.length; j++) {
-      const idx1 = grid.indexOf(unmatched[i]);
-      const idx2 = grid.indexOf(unmatched[j]);
-      
-      if (unmatched[i].logo === unmatched[j].logo && findPath(idx1, idx2)) {
-        const el1 = document.querySelector(`.match-cell[data-idx="${idx1}"]`);
-        const el2 = document.querySelector(`.match-cell[data-idx="${idx2}"]`);
+      if (unmatched[i].logo === unmatched[j].logo) {
+        const idx1 = grid.indexOf(unmatched[i]);
+        const idx2 = grid.indexOf(unmatched[j]);
         
-        el1.classList.add("hint-active");
-        el2.classList.add("hint-active");
+        const cell1 = document.querySelector(`.match-cell[data-idx="${idx1}"]`);
+        const cell2 = document.querySelector(`.match-cell[data-idx="${idx2}"]`);
+        
+        cell1.classList.add('hint-active');
+        cell2.classList.add('hint-active');
+        hintCells = [idx1, idx2];
         
         setTimeout(() => {
-          el1.classList.remove("hint-active");
-          el2.classList.remove("hint-active");
+          cell1.classList.remove('hint-active');
+          cell2.classList.remove('hint-active');
         }, 2000);
         
         return;
       }
     }
   }
-  
-  // 没有可连接的，自动洗牌
-  shuffleGrid();
 }
 
 function shuffleGrid() {
-  // 收集剩余的logo
   const config = LEVELS[currentLevel];
-  const remaining = grid.filter(c => !c.empty).map(c => c.logo);
-  remaining.sort(() => Math.random() - 0.5);
+  const unmatched = grid.filter(c => !c.empty && !c.matched);
+  const logos = unmatched.map(c => c.logo);
   
-  // 重新分配
-  let idx = 0;
-  for (let i = 0; i < grid.length; i++) {
-    if (!grid[i].empty) {
-      grid[i].logo = remaining[idx++];
-    }
-  }
+  logos.sort(() => Math.random() - 0.5);
+  
+  unmatched.forEach((cell, i) => {
+    cell.logo = logos[i];
+  });
   
   renderGrid();
+  
+  // 清除提示
+  if (hintCells.length > 0) {
+    hintCells.forEach(idx => {
+      const el = document.querySelector(`.match-cell[data-idx="${idx}"]`);
+      if (el) el.classList.remove('hint-active');
+    });
+    hintCells = [];
+  }
 }
 
 function successLevel() {
   clearInterval(timerInterval);
   timerInterval = null;
-  document.getElementById("toolsBar").style.display = "none";
   
   const timeUsed = Math.round((Date.now() - startTime) / 1000);
   
-  document.getElementById("resultIcon").textContent = "🏆";
-  document.getElementById("resultTitle").textContent = "通关成功！";
-  document.getElementById("resultTitle").className = "result-title success";
-  document.getElementById("resultMessage").textContent = `${LEVELS[currentLevel].name} 已完成`;
-  document.getElementById("statTime").textContent = timeUsed + "s";
-  document.getElementById("statMatches").textContent = matchCount;
-  document.getElementById("nextBtn").textContent = currentLevel < LEVELS.length - 1 ? "下一关 →" : "再来一轮";
-  
-  document.getElementById("resultScreen").classList.add("active");
+  document.getElementById('resultTitle').textContent = '🎉 通关成功！';
+  document.getElementById('statTime').textContent = timeUsed + 's';
+  document.getElementById('statMatches').textContent = matchCount;
+  document.getElementById('resultScreen').classList.remove('hidden');
 }
 
 function failLevel() {
   clearInterval(timerInterval);
   timerInterval = null;
-  document.getElementById("toolsBar").style.display = "none";
   
-  document.getElementById("resultIcon").textContent = "⏱️";
-  document.getElementById("resultTitle").textContent = "时间到！";
-  document.getElementById("resultTitle").className = "result-title fail";
-  document.getElementById("resultMessage").textContent = "别灰心，再试一次！";
-  document.getElementById("statTime").textContent = "-";
-  document.getElementById("statMatches").textContent = matchCount;
-  document.getElementById("nextBtn").textContent = "重新挑战";
-  
-  document.getElementById("resultScreen").classList.add("active");
+  document.getElementById('resultTitle').textContent = '⏱️ 时间到！';
+  document.getElementById('statTime').textContent = '-';
+  document.getElementById('statMatches').textContent = matchCount;
+  document.getElementById('resultScreen').classList.remove('hidden');
 }
 
 function nextLevel() {
-  document.getElementById("resultScreen").classList.remove("active");
+  document.getElementById('resultScreen').classList.add('hidden');
   currentLevel++;
   if (currentLevel >= LEVELS.length) currentLevel = 0;
   initLevel();
 }
 
 function backToStart() {
-  document.getElementById("resultScreen").classList.remove("active");
-  document.getElementById("hud").style.display = "none";
-  document.getElementById("progressBar").style.display = "none";
-  document.getElementById("startScreen").classList.add("active");
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+  clearInterval(timerInterval);
+  timerInterval = null;
 }
 
 init();
