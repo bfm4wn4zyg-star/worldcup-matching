@@ -428,8 +428,8 @@ function selectCell(idx) {
     const secondCell = cell;
     
     if (firstCell.logo === secondCell.logo) {
-      // 检查路径是否可行
       const path = findPath(selected, idx);
+      console.log('findPath returned:', path);
       if (path) {
         // 匹配成功
         const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
