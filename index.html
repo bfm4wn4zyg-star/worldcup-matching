@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🔗 世界杯连连看</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      color: #fff;
+    }
+    
+    /* Screens */
+    .screen { display: none; }
+    .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    
+    /* Start Screen */
+    .start-screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      z-index: 100;
+    }
+    .start-icon {
+      font-size: 5rem;
+      margin-bottom: 16px;
+      animation: bounce 1.5s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.05); }
+    }
+    .start-title {
+      font-size: 2.2rem;
+      font-weight: bold;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .start-subtitle {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+      margin-bottom: 30px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .start-btn {
+      padding: 16px 48px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1a1a2e;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 8px 30px rgba(255,200,0,0.3);
+      margin-bottom: 16px;
+    }
+    .start-rules {
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    
+    /* HUD */
+    .hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%);
+    }
+    .hud-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hud-icon { font-size: 1.2rem; }
+    .hud-value {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+    .hud-label {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+    }
+    
+    /* Level Info */
+    .level-info {
+      text-align: center;
+    }
+    .level-name { font-size: 1.1rem; color: #fff; }
+    .level-hint { font-size: 0.75rem; color: rgba(255,255,255,0.4); }
+    
+    /* Progress */
+    .progress-bar {
+      position: fixed;
+      top: 60px;
+      left: 20px;
+      right: 20px;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffd700, #ff8c00);
+      transition: width 0.3s ease;
+    }
+    
+    /* Game Grid */
+    .game-container {
+      position: fixed;
+      top: 80px;
+      left: 0;
+      right: 0;
+      bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+    
+    .match-grid {
+      display: grid;
+      gap: 6px;
+      max-width: 100%;
+    }
+    
+    .match-cell {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(145deg, #2a3a5a, #1a2a4a);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .match-cell:hover {
+      transform: scale(1.05);
+      border-color: rgba(255,215,0,0.4);
+    }
+    .match-cell.selected {
+      border-color: #ffd700;
+      background: linear-gradient(145deg, #3a4a6a, #2a3a5a);
+      box-shadow: 0 0 20px rgba(255,215,0,0.5);
+      transform: scale(1.1);
+    }
+    .match-cell.matched {
+      animation: matchPop 0.4s ease forwards;
+    }
+    @keyframes matchPop {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(0); opacity: 0; }
+    }
+    .match-cell.empty {
+      background: rgba(255,255,255,0.03);
+      border-color: rgba(255,255,255,0.05);
+      pointer-events: none;
+    }
+    .match-cell .logo {
+      font-size: 1.8rem;
+      transition: transform 0.2s;
+    }
+    .match-cell.selected .logo {
+      transform: scale(1.1);
+    }
+    
+    /* Connection Line Canvas */
+    .line-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 30;
+    }
+    
+    /* Result Screen */
+    .result-screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .result-screen.active { display: flex; }
+    .result-icon { font-size: 5rem; margin-bottom: 20px; }
+    .result-title {
+      font-size: 2.2rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .result-title.success { color: #ffd700; }
+    .result-title.fail { color: #ff4444; }
+    .result-message { color: rgba(255,255,255,0.6); margin-bottom: 30px; }
+    .result-stats {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+    .stat-box {
+      text-align: center;
+      padding: 16px 24px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+    }
+    .stat-value { font-size: 2rem; font-weight: bold; color: #ffd700; }
+    .stat-label { font-size: 0.8rem; color: rgba(255,255,255,0.5); }
+    .result-actions { display: flex; gap: 16px; }
+    .result-btn {
+      padding: 14px 28px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+    }
+    .result-btn.primary {
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #1a1a2e;
+    }
+    .result-btn.secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    
+    /* Share Card */
+    .share-card {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      background: linear-gradient(135deg, #1a2a4a, #0a1a2a);
+      border: 3px solid #ffd700;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      z-index: 300;
+    }
+    .share-card.active { display: block; }
+    .share-card h3 { color: #ffd700; margin-bottom: 16px; font-size: 1.2rem; }
+    .share-level { font-size: 1.5rem; font-weight: bold; color: #fff; margin-bottom: 8px; }
+    .share-score { font-size: 3rem; font-weight: bold; color: #ffd700; }
+    .share-label { color: rgba(255,255,255,0.6); margin-bottom: 20px; }
+    .share-tip {
+      background: rgba(255,215,0,0.1);
+      color: #ffd700;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+    }
+    .share-close {
+      position: absolute;
+      top: -15px; right: -15px;
+      width: 36px; height: 36px;
+      background: #ffd700;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 36px;
+    }
+    
+    /* Hint Animation */
+    @keyframes hintPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(255,215,0,0); }
+    }
+    .hint-active { animation: hintPulse 1s ease infinite; }
+  </style>
+</head>
+<body>
+  <!-- Start Screen -->
+  <div class="start-screen screen active" id="startScreen">
+    <div class="start-icon">🔗</div>
+    <div class="start-title">世界杯连连看</div>
+    <div class="start-subtitle">
+      连接相同的球队徽章<br>
+      2条线以内相连即可消除<br>
+      消除所有徽章过关
+    </div>
+    <button class="start-btn" onclick="startGame()">开始挑战</button>
+    <div class="start-rules">📱 触摸连接 · 3秒内完成配对</div>
+  </div>
+  
+  <!-- HUD -->
+  <div class="hud" id="hud" style="display:none">
+    <div class="hud-item">
+      <span class="hud-icon">🏆</span>
+      <div>
+        <div class="hud-value" id="levelDisplay">第1关</div>
+        <div class="hud-label">当前关卡</div>
+      </div>
+    </div>
+    <div class="level-info">
+      <div class="level-name" id="levelName">小组赛A组</div>
+      <div class="level-hint" id="levelHint">剩余 16 对</div>
+    </div>
+    <div class="hud-item">
+      <span class="hud-icon">⏱️</span>
+      <div>
+        <div class="hud-value" id="timeDisplay">60</div>
+        <div class="hud-label">剩余时间</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Progress Bar -->
+  <div class="progress-bar" id="progressBar" style="display:none">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+  
+  <!-- Game Container -->
+  <div class="game-container" id="gameContainer">
+    <div class="match-grid" id="matchGrid"></div>
+  </div>
+  
+  <!-- Line Canvas -->
+  <canvas class="line-canvas" id="lineCanvas"></canvas>
+  
+  <!-- Result Screen -->
+  <div class="result-screen" id="resultScreen">
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <div class="result-title" id="resultTitle">通关成功！</div>
+    <div class="result-message" id="resultMessage">恭喜你完成了本关挑战</div>
+    <div class="result-stats">
+      <div class="stat-box">
+        <div class="stat-value" id="statTime">30s</div>
+        <div class="stat-label">用时</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statMatches">16</div>
+        <div class="stat-label">配对数</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="statScore">1200</div>
+        <div class="stat-label">得分</div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="result-btn primary" onclick="nextLevel()">下一关 →</button>
+      <button class="result-btn secondary" onclick="shareResult()">📤 分享</button>
+    </div>
+  </div>
+  
+  <!-- Share Card -->
+  <div class="share-card" id="shareCard">
+    <button class="share-close" onclick="closeShare()">×</button>
+    <h3>🔗 世界杯连连看</h3>
+    <div class="share-level" id="shareLevel">第1关</div>
+    <div class="share-score" id="shareScore">1200</div>
+    <div class="share-label" id="shareLabel">配对 16 次 · 用时 30秒</div>
+    <div class="share-tip">⚽ 挑战一下你的朋友！</div>
+  </div>
+
+<script>
+// ============ Game Data ============
+const TEAM_LOGOS = [
+  '🇧🇷', '🇩🇪', '🇫🇷', '🇦🇷', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', '🇪🇸', '🇵🇹', '🇳🇱',
+  '🇧🇪', '🇭🇷', '🇩🇰', '🇮🇹', '🇺🇾', '🇲🇦', '🇯🇵', '🇰🇷',
+  '🇺🇸', '🇨🇦', '🇦🇺', '🇸🇦', '🇮🇷', '🇲🇽', '🇵🇱', '🇸🇳',
+  '🇬🇭', '🇨🇭', '🇸🇰', '🇨🇱', '🇨🇴', '🇵🇪', '🇸🇾', '🇨🇮'
+];
+
+const LEVEL_CONFIGS = [
+  { rows: 4, cols: 6, name: '小组赛A组', time: 90 },
+  { rows: 4, cols: 6, name: '小组赛B组', time: 80 },
+  { rows: 5, cols: 6, name: '小组赛C组', time: 75 },
+  { rows: 5, cols: 6, name: '小组赛D组', time: 70 },
+  { rows: 5, cols: 8, name: '16强淘汰赛', time: 65 },
+  { rows: 6, cols: 8, name: '8强淘汰赛', time: 60 },
+  { rows: 6, cols: 10, name: '半决赛', time: 55 },
+  { rows: 7, cols: 10, name: '决赛', time: 50 },
+];
+
+// ============ Game State ============
+let currentLevel = 0;
+let grid = [];
+let selected = null;
+let matchCount = 0;
+let startTime = 0;
+let timeLeft = 60;
+let timerInterval = null;
+let totalPairs = 0;
+let remainingPairs = 0;
+let lineCanvas, lineCtx;
+let hintCells = [];
+let hintTimeout = null;
+
+// ============ Init ============
+function init() {
+  lineCanvas = document.getElementById('lineCanvas');
+  lineCtx = lineCanvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+}
+
+function resizeCanvas() {
+  lineCanvas.width = window.innerWidth;
+  lineCanvas.height = window.innerHeight;
+}
+
+// ============ Game Flow ============
+function startGame() {
+  currentLevel = 0;
+  matchCount = 0;
+  document.getElementById('startScreen').classList.remove('active');
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('progressBar').style.display = 'block';
+  initLevel();
+}
+
+function initLevel() {
+  const config = LEVEL_CONFIGS[currentLevel];
+  
+  // Update HUD
+  document.getElementById('levelDisplay').textContent = `第${currentLevel + 1}关`;
+  document.getElementById('levelName').textContent = config.name;
+  timeLeft = config.time;
+  document.getElementById('timeDisplay').textContent = timeLeft;
+  
+  // Generate grid
+  generateGrid(config.rows, config.cols);
+  totalPairs = grid.length / 2;
+  remainingPairs = totalPairs;
+  updateHint();
+  
+  // Start timer
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById('timeDisplay').textContent = timeLeft;
+    
+    if (timeLeft <= 10) {
+      document.getElementById('timeDisplay').style.color = '#ff4444';
+    }
+    
+    if (timeLeft <= 0) {
+      failLevel();
+    }
+  }, 1000);
+  
+  startTime = Date.now();
+  renderGrid();
+}
+
+function generateGrid(rows, cols) {
+  grid = [];
+  const totalCells = rows * cols;
+  const pairs = totalCells / 2;
+  
+  // Create pairs
+  const usedLogos = TEAM_LOGOS.slice(0, Math.min(pairs, TEAM_LOGOS.length));
+  let logos = [];
+  
+  for (let i = 0; i < pairs; i++) {
+    const logo = usedLogos[i % usedLogos.length];
+    logos.push(logo, logo);
+  }
+  
+  // Shuffle
+  logos.sort(() => Math.random() - 0.5);
+  
+  // Fill grid
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      grid.push({
+        row: i,
+        col: j,
+        logo: logos[i * cols + j],
+        matched: false,
+        empty: false
+      });
+    }
+  }
+}
+
+function renderGrid() {
+  const container = document.getElementById('matchGrid');
+  const config = LEVEL_CONFIGS[currentLevel];
+  
+  container.style.gridTemplateColumns = `repeat(${config.cols}, 56px)`;
+  container.innerHTML = '';
+  
+  grid.forEach((cell, idx) => {
+    const cellEl = document.createElement('div');
+    cellEl.className = 'match-cell';
+    cellEl.dataset.idx = idx;
+    
+    if (cell.empty) {
+      cellEl.classList.add('empty');
+    } else {
+      cellEl.innerHTML = `<div class="logo">${cell.logo}</div>`;
+      cellEl.onclick = () => selectCell(idx);
+    }
+    
+    container.appendChild(cellEl);
+  });
+  
+  updateProgress();
+}
+
+function selectCell(idx) {
+  if (timerInterval === null) return; // Game not running
+  
+  const cell = grid[idx];
+  if (cell.empty || cell.matched) return;
+  
+  const cellEl = document.querySelector(`.match-cell[data-idx="${idx}"]`);
+  
+  if (selected === null) {
+    // First selection
+    selected = idx;
+    cellEl.classList.add('selected');
+    
+    // Show hint after 3 seconds
+    clearTimeout(hintTimeout);
+    hintTimeout = setTimeout(() => showHint(), 3000);
+    
+  } else if (selected === idx) {
+    // Deselect
+    selected = null;
+    cellEl.classList.remove('selected');
+    clearTimeout(hintTimeout);
+    
+  } else {
+    // Second selection - check match
+    const firstCell = grid[selected];
+    const secondCell = cell;
+    
+    if (firstCell.logo === secondCell.logo) {
+      // Match!
+      const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
+      
+      // Draw connection line
+      drawConnection(selected, idx);
+      
+      setTimeout(() => {
+        firstCell.matched = true;
+        secondCell.matched = true;
+        firstCell.empty = true;
+        secondCell.empty = true;
+        
+        firstEl.classList.remove('selected');
+        firstEl.classList.add('matched');
+        cellEl.classList.add('matched');
+        
+        setTimeout(() => {
+          firstEl.classList.add('empty');
+          firstEl.innerHTML = '';
+          cellEl.classList.add('empty');
+          cellEl.innerHTML = '';
+        }, 400);
+        
+        matchCount++;
+        remainingPairs--;
+        updateHint();
+        updateProgress();
+        
+        // Check win
+        if (remainingPairs === 0) {
+          successLevel();
+        }
+      }, 200);
+      
+      clearTimeout(hintTimeout);
+      hintCells = [];
+      
+    } else {
+      // No match - shake and deselect
+      cellEl.style.animation = 'shake 0.3s ease';
+      setTimeout(() => cellEl.style.animation = '', 300);
+      
+      const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
+      firstEl.classList.remove('selected');
+      
+      clearTimeout(hintTimeout);
+      hintTimeout = setTimeout(() => showHint(), 3000);
+    }
+    
+    selected = null;
+    clearLine();
+  }
+}
+
+function drawConnection(idx1, idx2) {
+  const cell1 = document.querySelector(`.match-cell[data-idx="${idx1}"]`);
+  const cell2 = document.querySelector(`.match-cell[data-idx="${idx2}"]`);
+  
+  if (!cell1 || !cell2) return;
+  
+  const rect1 = cell1.getBoundingClientRect();
+  const rect2 = cell2.getBoundingClientRect();
+  
+  const x1 = rect1.left + rect1.width / 2;
+  const y1 = rect1.top + rect1.height / 2;
+  const x2 = rect2.left + rect2.width / 2;
+  const y2 = rect2.top + rect2.height / 2;
+  
+  // Draw line
+  lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+  lineCtx.beginPath();
+  lineCtx.moveTo(x1, y1);
+  
+  // Simple straight line (or with one turn)
+  lineCtx.lineTo(x2, y2);
+  lineCtx.strokeStyle = '#ffd700';
+  lineCtx.lineWidth = 4;
+  lineCtx.lineCap = 'round';
+  lineCtx.stroke();
+  
+  // Glow effect
+  lineCtx.shadowColor = '#ffd700';
+  lineCtx.shadowBlur = 15;
+  lineCtx.stroke();
+  
+  setTimeout(() => {
+    lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+  }, 300);
+}
+
+function clearLine() {
+  lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+}
+
+function updateHint() {
+  document.getElementById('levelHint').textContent = `剩余 ${remainingPairs} 对`;
+}
+
+function updateProgress() {
+  const progress = ((totalPairs - remainingPairs) / totalPairs) * 100;
+  document.getElementById('progressFill').style.width = progress + '%';
+}
+
+function showHint() {
+  // Find any valid pair
+  const unmatched = grid.filter(c => !c.empty && !c.matched);
+  
+  for (let i = 0; i < unmatched.length; i++) {
+    for (let j = i + 1; j < unmatched.length; j++) {
+      if (unmatched[i].logo === unmatched[j].logo) {
+        // Highlight these cells
+        const idx1 = grid.indexOf(unmatched[i]);
+        const idx2 = grid.indexOf(unmatched[j]);
+        
+        const cell1 = document.querySelector(`.match-cell[data-idx="${idx1}"]`);
+        const cell2 = document.querySelector(`.match-cell[data-idx="${idx2}"]`);
+        
+        cell1.classList.add('hint-active');
+        cell2.classList.add('hint-active');
+        
+        hintCells = [idx1, idx2];
+        
+        setTimeout(() => {
+          cell1.classList.remove('hint-active');
+          cell2.classList.remove('hint-active');
+        }, 2000);
+        
+        return;
+      }
+    }
+  }
+}
+
+function successLevel() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  
+  const timeUsed = Math.round((Date.now() - startTime) / 1000);
+  const score = Math.round(remainingPairs * 100 + (timeLeft * 10));
+  
+  document.getElementById('resultIcon').textContent = '🏆';
+  document.getElementById('resultTitle').textContent = '通关成功！';
+  document.getElementById('resultTitle').className = 'result-title success';
+  document.getElementById('resultMessage').textContent = `恭喜完成 ${LEVEL_CONFIGS[currentLevel].name}`;
+  document.getElementById('statTime').textContent = timeUsed + 's';
+  document.getElementById('statMatches').textContent = matchCount;
+  document.getElementById('statScore').textContent = score;
+  
+  document.getElementById('resultScreen').classList.add('active');
+}
+
+function failLevel() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  
+  document.getElementById('resultIcon').textContent = '⏱️';
+  document.getElementById('resultTitle').textContent = '时间到！';
+  document.getElementById('resultTitle').className = 'result-title fail';
+  document.getElementById('resultMessage').textContent = '别灰心，再试一次！';
+  document.getElementById('statTime').textContent = '-';
+  document.getElementById('statMatches').textContent = matchCount;
+  document.getElementById('statScore').textContent = '0';
+  
+  // Change button text
+  document.querySelector('.result-btn.primary').textContent = '重新挑战';
+  document.querySelector('.result-btn.primary').onclick = retryLevel;
+  
+  document.getElementById('resultScreen').classList.add('active');
+}
+
+function nextLevel() {
+  document.getElementById('resultScreen').classList.remove('active');
+  document.getElementById('timeDisplay').style.color = '#ffd700';
+  
+  currentLevel++;
+  
+  if (currentLevel >= LEVEL_CONFIGS.length) {
+    // All levels complete
+    currentLevel = 0;
+    startGame();
+    return;
+  }
+  
+  initLevel();
+}
+
+function retryLevel() {
+  document.getElementById('resultScreen').classList.remove('active');
+  document.getElementById('timeDisplay').style.color = '#ffd700';
+  document.querySelector('.result-btn.primary').textContent = '下一关 →';
+  document.querySelector('.result-btn.primary').onclick = nextLevel;
+  initLevel();
+}
+
+function shareResult() {
+  document.getElementById('shareLevel').textContent = `第${currentLevel + 1}关 · ${LEVEL_CONFIGS[currentLevel].name}`;
+  document.getElementById('shareScore').textContent = document.getElementById('statScore').textContent;
+  document.getElementById('shareLabel').textContent = `配对 ${matchCount} 次`;
+  document.getElementById('shareCard').classList.add('active');
+}
+
+function closeShare() {
+  document.getElementById('shareCard').classList.remove('active');
+}
+
+// Init
+init();
+</script>
+</body>
+</html>
