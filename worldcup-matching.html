@@ -2,568 +2,339 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>世界杯连连看</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
       min-height: 100vh;
       color: #fff;
-      overflow-x: hidden;
-    }
-    .header {
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       padding: 20px;
-      background: rgba(0,0,0,0.3);
     }
-    .header h1 {
-      font-size: 28px;
+    h1 {
       color: #ffd700;
-      text-shadow: 0 0 20px rgba(255,215,0,0.5);
+      margin-bottom: 20px;
+      font-size: 24px;
     }
-    .hud {
+    .info {
       display: flex;
-      justify-content: space-around;
-      padding: 15px;
-      background: rgba(0,0,0,0.4);
-      margin: 10px;
-      border-radius: 12px;
+      gap: 30px;
+      margin-bottom: 15px;
+      font-size: 14px;
     }
-    .hud-item { text-align: center; }
-    .hud-label { font-size: 12px; color: #aaa; margin-bottom: 4px; }
-    .hud-value { font-size: 20px; font-weight: bold; color: #ffd700; }
-    .game-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      position: relative;
-    }
-    #matchGrid {
+    .info span { color: #aaa; }
+    .info strong { color: #ffd700; }
+    #grid {
       display: grid;
-      gap: 5px;
-      background: rgba(255,255,255,0.05);
-      padding: 10px;
-      border-radius: 12px;
-      border: 2px solid rgba(255,215,0,0.3);
+      gap: 4px;
+      background: rgba(255,255,255,0.1);
+      padding: 8px;
+      border-radius: 10px;
     }
-    .match-cell {
-      width: 50px;
-      height: 50px;
+    .cell {
+      width: 48px;
+      height: 48px;
       background: linear-gradient(145deg, #2a2a4a, #1a1a3a);
-      border-radius: 8px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 26px;
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 28px;
       border: 1px solid rgba(255,215,0,0.2);
-      position: relative;
+      transition: transform 0.15s, box-shadow 0.15s;
     }
-    .match-cell:hover {
-      transform: scale(1.08);
-      box-shadow: 0 0 15px rgba(255,215,0,0.4);
+    .cell:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 12px rgba(255,215,0,0.4);
     }
-    .match-cell.selected {
-      background: linear-gradient(145deg, #3a3a5a, #2a2a4a);
-      box-shadow: 0 0 20px rgba(255,215,0,0.6);
+    .cell.selected {
       border-color: #ffd700;
+      box-shadow: 0 0 15px rgba(255,215,0,0.6);
     }
-    .match-cell.matched {
-      background: rgba(255,215,0,0.2);
-      animation: matchPulse 0.4s ease;
-    }
-    .match-cell.shake {
-      animation: shake 0.3s ease;
-    }
-    .match-cell.empty {
+    .cell.empty {
       background: transparent;
       border: none;
       pointer-events: none;
     }
-    .match-cell.hint-active {
-      animation: hintPulse 0.5s ease infinite alternate;
+    .cell.matched {
+      animation: pulse 0.3s ease;
     }
-    @keyframes matchPulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.2); }
-      100% { transform: scale(1); }
+    .cell.shake {
+      animation: shake 0.3s ease;
+    }
+    @keyframes pulse {
+      50% { transform: scale(1.15); }
     }
     @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-    @keyframes hintPulse {
-      0% { box-shadow: 0 0 5px rgba(255,215,0,0.5); }
-      100% { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
     }
     .tools {
+      margin-top: 15px;
       display: flex;
-      justify-content: center;
-      gap: 15px;
-      padding: 15px;
+      gap: 10px;
     }
-    .tool-btn {
-      padding: 10px 20px;
+    button {
+      padding: 8px 16px;
       background: rgba(255,215,0,0.2);
       border: 1px solid rgba(255,215,0,0.4);
-      border-radius: 8px;
+      border-radius: 6px;
       color: #ffd700;
       cursor: pointer;
       font-size: 14px;
-      transition: all 0.2s;
     }
-    .tool-btn:hover {
-      background: rgba(255,215,0,0.3);
-    }
-    .progress-bar {
-      width: 80%;
-      max-width: 400px;
-      height: 8px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 4px;
-      margin: 0 auto 20px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ffd700, #ff8c00);
-      transition: width 0.3s;
-    }
-    #lineCanvas {
+    button:hover { background: rgba(255,215,0,0.3); }
+    canvas {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       pointer-events: none;
-      z-index: 1000;
-    }
-    .screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
       z-index: 100;
-    }
-    .screen.hidden { display: none; }
-    .screen h2 {
-      font-size: 32px;
-      color: #ffd700;
-      margin-bottom: 20px;
-    }
-    .screen p {
-      font-size: 16px;
-      color: #aaa;
-      margin-bottom: 30px;
-    }
-    .start-btn {
-      padding: 15px 40px;
-      font-size: 18px;
-      background: linear-gradient(135deg, #ffd700, #ff8c00);
-      border: none;
-      border-radius: 12px;
-      color: #1a1a2e;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .start-btn:hover { transform: scale(1.05); }
-    .result-screen h2 { font-size: 28px; }
-    .result-screen .stats {
-      display: flex;
-      gap: 30px;
-      margin: 20px 0;
-    }
-    .result-screen .stat {
-      text-align: center;
-    }
-    .result-screen .stat-value {
-      font-size: 24px;
-      color: #ffd700;
-      font-weight: bold;
-    }
-    .result-screen .stat-label {
-      font-size: 12px;
-      color: #888;
-    }
-    .result-btn {
-      padding: 12px 30px;
-      margin: 10px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .result-btn.primary {
-      background: linear-gradient(135deg, #ffd700, #ff8c00);
-      color: #1a1a2e;
-      font-weight: bold;
-    }
-    .result-btn.secondary {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
     }
   </style>
 </head>
 <body>
-  <canvas id="lineCanvas"></canvas>
-  
-  <div id="startScreen" class="screen">
-    <h1>🏆 世界杯连连看 🏆</h1>
-    <p>找出相同的国旗并连接它们<br>规则：只能拐弯2次以内</p>
-    <button class="start-btn" onclick="startGame()">开始挑战</button>
+  <h1>🏆 世界杯连连看</h1>
+  <div class="info">
+    <span>关卡: <strong id="level">1</strong></span>
+    <span>剩余: <strong id="pairs">12</strong> 对</span>
+    <span>时间: <strong id="time">90</strong> 秒</span>
   </div>
-  
-  <div id="gameScreen" class="screen hidden">
-    <div class="header">
-      <h1>⚽ 世界杯连连看 ⚽</h1>
-    </div>
-    <div class="hud">
-      <div class="hud-item">
-        <div class="hud-label">关卡</div>
-        <div class="hud-value" id="levelDisplay">第1关</div>
-      </div>
-      <div class="hud-item">
-        <div class="hud-label">剩余</div>
-        <div class="hud-value" id="hintDisplay">0对</div>
-      </div>
-      <div class="hud-item">
-        <div class="hud-label">时间</div>
-        <div class="hud-value" id="timeDisplay">90</div>
-      </div>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill" style="width: 0%"></div>
-    </div>
-    <div class="game-container">
-      <div id="matchGrid"></div>
-    </div>
-    <div class="tools">
-      <button class="tool-btn" onclick="showHint()">💡 提示</button>
-      <button class="tool-btn" onclick="shuffleGrid()">🔀 洗牌</button>
-    </div>
+  <div id="grid"></div>
+  <div class="tools">
+    <button onclick="showHint()">💡 提示</button>
+    <button onclick="shuffle()">🔀 洗牌</button>
   </div>
-  
-  <div id="resultScreen" class="screen result-screen hidden">
-    <h2 id="resultTitle">通关成功！</h2>
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-value" id="statTime">0s</div>
-        <div class="stat-label">用时</div>
-      </div>
-      <div class="stat">
-        <div class="stat-value" id="statMatches">0</div>
-        <div class="stat-label">配对数</div>
-      </div>
-    </div>
-    <button class="result-btn primary" onclick="nextLevel()">下一关 →</button>
-    <button class="result-btn secondary" onclick="backToStart()">返回主页</button>
-  </div>
+  <canvas id="canvas"></canvas>
 
 <script>
-console.log('Script starting...');
-
-// ============ 关卡配置 ============
+// ============ 配置 ============
 const LEVELS = [
-  { rows: 4, cols: 6, name: '小组赛A组', time: 90 },
-  { rows: 4, cols: 6, name: '小组赛B组', time: 80 },
-  { rows: 5, cols: 6, name: '小组赛C组', time: 75 },
-  { rows: 5, cols: 6, name: '小组赛D组', time: 70 },
-  { rows: 5, cols: 8, name: '16强淘汰赛', time: 65 },
-  { rows: 6, cols: 8, name: '8强淘汰赛', time: 60 },
-  { rows: 6, cols: 10, name: '半决赛', time: 55 },
-  { rows: 7, cols: 10, name: '决赛', time: 50 },
+  { rows: 4, cols: 6, time: 90 },
+  { rows: 4, cols: 6, time: 80 },
+  { rows: 5, cols: 6, time: 75 },
+  { rows: 5, cols: 8, time: 70 },
 ];
 
-// 世界杯参赛国国旗
-const TEAM_LOGOS = [
-  '🇧🇷', '🇦🇷', '🇫🇷', '🇩🇪', '🇪🇸', '🇵🇹', '🇬🇧', '🇮🇹',
-  '🇳🇱', '🇧🇪', '🇭🇷', '🇩🇰', '🇵🇱', '🇨🇭', '🇦🇹', '🇺🇾',
-  '🇲🇽', '🇺🇸', '🇨🇦', '🇯🇵', '🇰🇷', '🇮🇷', '🇸🇦', '🇦🇺',
-  '🇸🇳', '🇲🇦', '🇪🇬', '🇬🇭', '🇵🇰', '🇮🇳', '🇮🇩', '🇹🇭'
-];
+const FLAGS = '🇧🇷🇦🇷🇫🇷🇩🇪🇪🇸🇵🇹🇬🇧🇮🇹🇳🇱🇧🇪🇭🇷🇩🇰🇵🇱🇨🇭🇦🇹🇺🇾🇲🇽🇺🇸🇨🇦🇯🇵🇰🇷🇮🇷🇸🇦🇦🇺'.split('');
 
-// ============ 游戏状态 ============
-let currentLevel = 0;
+// ============ 状态 ============
+let level = 0;
 let grid = [];
 let selected = null;
-let matchCount = 0;
-let startTime = 0;
+let pairs = 0;
+let timer = null;
 let timeLeft = 90;
-let timerInterval = null;
-let totalPairs = 0;
-let remainingPairs = 0;
-let hintCells = [];
-let hintTimeout = null;
-let lineCanvas, lineCtx;
-
-console.log('Constants defined...');
+let canvas, ctx;
 
 // ============ 初始化 ============
 function init() {
-  console.log('init() called');
-  lineCanvas = document.getElementById('lineCanvas');
-  lineCtx = lineCanvas.getContext('2d');
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  canvas = document.getElementById('canvas');
+  ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+  startLevel();
 }
 
-function resizeCanvas() {
-  lineCanvas.width = window.innerWidth;
-  lineCanvas.height = window.innerHeight;
-}
-
-console.log('init functions defined...');
-
-// ============ 游戏流程 ============
-function startGame() {
-  console.log('startGame() called');
-  currentLevel = 0;
-  matchCount = 0;
-  document.getElementById('startScreen').classList.add('hidden');
-  document.getElementById('gameScreen').classList.remove('hidden');
-  document.getElementById('resultScreen').classList.add('hidden');
-  initLevel();
-}
-
-function initLevel() {
-  console.log('initLevel() called, currentLevel:', currentLevel);
-  const config = LEVELS[currentLevel];
+function startLevel() {
+  clearInterval(timer);
+  const config = LEVELS[level];
+  const rows = config.rows;
+  const cols = config.cols;
   
-  document.getElementById('levelDisplay').textContent = `第${currentLevel + 1}关`;
-  document.getElementById('hintDisplay').textContent = `${remainingPairs}对`;
+  document.getElementById('level').textContent = level + 1;
   timeLeft = config.time;
-  document.getElementById('timeDisplay').textContent = timeLeft;
+  document.getElementById('time').textContent = timeLeft;
   
-  generateGrid(config.rows, config.cols);
-  totalPairs = grid.length / 2;
-  remainingPairs = totalPairs;
-  
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    document.getElementById('timeDisplay').textContent = timeLeft;
-    if (timeLeft <= 0) failLevel();
-  }, 1000);
-  
-  startTime = Date.now();
-  renderGrid();
-  updateProgress();
-}
-
-function generateGrid(rows, cols) {
-  console.log('generateGrid() called', rows, 'x', cols);
+  // 生成网格
   grid = [];
   const total = rows * cols;
-  const pairs = total / 2;
-  
+  const numPairs = total / 2;
   let logos = [];
-  for (let i = 0; i < pairs; i++) {
-    const logo = TEAM_LOGOS[i % TEAM_LOGOS.length];
-    logos.push(logo, logo);
+  
+  for (let i = 0; i < numPairs; i++) {
+    const flag = FLAGS[i % FLAGS.length];
+    logos.push(flag, flag);
   }
   
-  logos.sort(() => Math.random() - 0.5);
+  // 打乱
+  for (let i = logos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [logos[i], logos[j]] = [logos[j], logos[i]];
+  }
   
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
       grid.push({
-        row: i,
-        col: j,
+        row: i, col: j,
         logo: logos[i * cols + j],
-        matched: false,
         empty: false
       });
     }
   }
-  console.log('Grid generated, cells:', grid.length);
+  
+  pairs = numPairs;
+  document.getElementById('pairs').textContent = pairs;
+  
+  render();
+  
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById('time').textContent = timeLeft;
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      alert('时间到！');
+      startLevel();
+    }
+  }, 1000);
 }
 
-function renderGrid() {
-  console.log('renderGrid() called');
-  const container = document.getElementById('matchGrid');
-  const config = LEVELS[currentLevel];
+function render() {
+  const config = LEVELS[level];
+  const rows = config.rows;
+  const cols = config.cols;
+  const container = document.getElementById('grid');
   
-  container.style.gridTemplateColumns = `repeat(${config.cols}, 50px)`;
+  container.style.gridTemplateColumns = `repeat(${cols}, 48px)`;
   container.innerHTML = '';
   
   grid.forEach((cell, idx) => {
-    const el = document.createElement('div');
-    el.className = 'match-cell' + (cell.empty ? ' empty' : '');
-    el.dataset.idx = idx;
-    
+    const div = document.createElement('div');
+    div.className = 'cell' + (cell.empty ? ' empty' : '');
+    div.dataset.idx = idx;
     if (!cell.empty) {
-      el.innerHTML = `<div class="logo">${cell.logo}</div>`;
-      el.onclick = function() { 
-        console.log('Cell clicked, idx:', idx);
-        selectCell(idx); 
-      };
+      div.textContent = cell.logo;
+      div.onclick = () => handleClick(idx);
     }
-    
-    container.appendChild(el);
+    container.appendChild(div);
   });
-  
-  console.log('Grid rendered, cells in DOM:', container.children.length);
-  updateProgress();
 }
 
-console.log('Game flow functions defined...');
-
-// ============ 选择与连接 ============
-function selectCell(idx) {
-  console.log('selectCell called, idx:', idx, 'selected:', selected);
-  
-  if (timerInterval === null) {
-    console.log('timerInterval is null, returning');
-    return;
-  }
-  
+function handleClick(idx) {
   const cell = grid[idx];
-  console.log('cell:', cell);
+  if (cell.empty) return;
   
-  if (cell.empty || cell.matched) {
-    console.log('cell is empty or matched, returning');
-    return;
-  }
-  
-  const cellEl = document.querySelector(`.match-cell[data-idx="${idx}"]`);
-  console.log('cellEl:', cellEl);
+  const cellEl = document.querySelector(`[data-idx="${idx}"]`);
   
   if (selected === null) {
-    console.log('First selection');
     selected = idx;
     cellEl.classList.add('selected');
-    clearTimeout(hintTimeout);
-    hintTimeout = setTimeout(() => showHint(), 3000);
   } else if (selected === idx) {
-    console.log('Deselect');
     selected = null;
     cellEl.classList.remove('selected');
-    clearTimeout(hintTimeout);
   } else {
-    console.log('Second selection, checking match');
-    const firstCell = grid[selected];
-    const secondCell = cell;
-    console.log('firstCell.logo:', firstCell.logo, 'secondCell.logo:', secondCell.logo);
+    const first = grid[selected];
+    const second = cell;
     
-    if (firstCell.logo === secondCell.logo) {
-      console.log('Logos match, checking path...');
-      const path = findPath(selected, idx);
-      console.log('findPath returned:', path);
-      
+    if (first.logo === second.logo) {
+      // 图案相同，检查能否连接
+      const path = canConnect(selected, idx);
       if (path) {
-        console.log('Path found, doing match!');
-        const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
-        drawPath(path);
-        
+        // 能连接！画线并消除
+        drawLine(path);
         setTimeout(() => {
-          firstCell.matched = true;
-          secondCell.matched = true;
-          firstCell.empty = true;
-          secondCell.empty = true;
+          first.empty = true;
+          second.empty = true;
+          pairs--;
+          document.getElementById('pairs').textContent = pairs;
           
-          firstEl.classList.remove('selected');
-          firstEl.classList.add('matched');
-          cellEl.classList.add('matched');
+          document.querySelector(`[data-idx="${selected}"]`).classList.remove('selected');
+          document.querySelector(`[data-idx="${selected}"]`).classList.add('empty');
+          document.querySelector(`[data-idx="${selected}"]`).textContent = '';
+          cellEl.classList.add('empty');
+          cellEl.textContent = '';
           
-          setTimeout(() => {
-            firstEl.classList.add('empty');
-            firstEl.innerHTML = '';
-            cellEl.classList.add('empty');
-            cellEl.innerHTML = '';
-          }, 400);
+          clearLine();
+          selected = null;
           
-          matchCount++;
-          remainingPairs--;
-          document.getElementById('hintDisplay').textContent = `${remainingPairs}对`;
-          updateProgress();
-          
-          if (remainingPairs === 0) successLevel();
-        }, 200);
+          if (pairs === 0) {
+            clearInterval(timer);
+            setTimeout(() => {
+              alert('恭喜通关！');
+              level = (level + 1) % LEVELS.length;
+              startLevel();
+            }, 300);
+          }
+        }, 300);
       } else {
-        console.log('No path found, shake');
+        // 不能连接，抖动
         cellEl.classList.add('shake');
-        const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
-        firstEl.classList.add('shake');
+        document.querySelector(`[data-idx="${selected}"]`).classList.add('shake');
         setTimeout(() => {
           cellEl.classList.remove('shake');
-          firstEl.classList.remove('shake');
+          document.querySelector(`[data-idx="${selected}"]`).classList.remove('shake');
         }, 300);
+        selected = null;
+        document.querySelector(`[data-idx="${selected}"]`).classList.remove('selected');
       }
     } else {
-      console.log('Logos do not match, shake');
+      // 图案不同
       cellEl.classList.add('shake');
-      const firstEl = document.querySelector(`.match-cell[data-idx="${selected}"]`);
-      firstEl.classList.add('shake');
+      document.querySelector(`[data-idx="${selected}"]`).classList.add('shake');
       setTimeout(() => {
         cellEl.classList.remove('shake');
-        firstEl.classList.remove('shake');
+        document.querySelector(`[data-idx="${selected}"]`).classList.remove('shake');
       }, 300);
+      selected = null;
+      document.querySelector(`[data-idx="${selected}"]`).classList.remove('selected');
     }
-    
-    selected = null;
-    clearLine();
   }
 }
 
-console.log('selectCell defined...');
-
-// ============ 路径查找 (最多2个转弯) ============
-function findPath(idx1, idx2) {
-  console.log('findPath called', idx1, idx2);
-  const config = LEVELS[currentLevel];
+// ============ 路径判断 (最多2个转弯) ============
+// 判断两个格子能否连接，最多2个转弯
+function canConnect(idx1, idx2) {
+  const config = LEVELS[level];
   const rows = config.rows;
   const cols = config.cols;
   
-  const cell1 = grid[idx1];
-  const cell2 = grid[idx2];
+  const c1 = grid[idx1];
+  const c2 = grid[idx2];
   
-  if (cell1.logo !== cell2.logo) {
-    console.log('Logos do not match');
-    return null;
-  }
+  if (c1.logo !== c2.logo) return null;
   
-  // 扩展网格坐标（原网格从1,1开始，边界外也可用）
-  const r1 = cell1.row + 1;
-  const c1 = cell1.col + 1;
-  const r2 = cell2.row + 1;
-  const c2 = cell2.col + 1;
+  // 扩展网格坐标 (边界外也可行走)
+  // 原网格从 (1,1) 到 (rows, cols)
+  // 扩展后从 (0,0) 到 (rows+1, cols+1)
+  const r1 = c1.row + 1;
+  const rc1 = c1.col + 1;
+  const r2 = c2.row + 1;
+  const rc2 = c2.col + 1;
   
-  console.log('Coords:', r1, c1, '->', r2, c2);
-  
-  // 检查是否在边界外空白区域
+  // 判断位置是否为空
   const isEmpty = (r, c) => {
     if (r < 0 || r > rows + 1 || c < 0 || c > cols + 1) return false;
+    // 边界外总是空的
     if (r === 0 || r === rows + 1 || c === 0 || c === cols + 1) return true;
+    // 边界内检查格子
     return grid[(r - 1) * cols + (c - 1)].empty;
   };
   
-  // 检查两点间直线是否通畅（不包括端点）
+  // 直线是否通畅（不包括端点）
   const lineClear = (r1, c1, r2, c2) => {
     if (r1 === r2 && c1 === c2) return true;
     if (r1 === r2) {
-      const minC = Math.min(c1, c2);
-      const maxC = Math.max(c1, c2);
-      for (let c = minC + 1; c < maxC; c++) {
+      const min = Math.min(c1, c2);
+      const max = Math.max(c1, c2);
+      for (let c = min + 1; c < max; c++) {
         if (!isEmpty(r1, c)) return false;
       }
       return true;
     }
     if (c1 === c2) {
-      const minR = Math.min(r1, r2);
-      const maxR = Math.max(r1, r2);
-      for (let r = minR + 1; r < maxR; r++) {
+      const min = Math.min(r1, r2);
+      const max = Math.max(r1, r2);
+      for (let r = min + 1; r < max; r++) {
         if (!isEmpty(r, c1)) return false;
       }
       return true;
@@ -571,191 +342,114 @@ function findPath(idx1, idx2) {
     return false;
   };
   
-  // 1. 直接连接（0转弯）
-  console.log('Checking direct line...');
-  if (lineClear(r1, c1, r2, c2)) {
-    console.log('Direct line clear!');
-    return [[r1, c1], [r2, c2]];
+  // 1. 直接连接 (同行或同列，中间无阻)
+  if (lineClear(r1, rc1, r2, rc2)) {
+    return [[r1, rc1], [r2, rc2]];
   }
   
   // 2. 一个转弯
-  console.log('Checking one turn...');
-  if (isEmpty(r1, c2) && lineClear(r1, c1, r1, c2) && lineClear(r1, c2, r2, c2)) {
-    console.log('One turn via (r1, c2)');
-    return [[r1, c1], [r1, c2], [r2, c2]];
+  // 拐角点1: (r1, rc2)
+  if (isEmpty(r1, rc2) && lineClear(r1, rc1, r1, rc2) && lineClear(r1, rc2, r2, rc2)) {
+    return [[r1, rc1], [r1, rc2], [r2, rc2]];
   }
-  if (isEmpty(r2, c1) && lineClear(r1, c1, r2, c1) && lineClear(r2, c1, r2, c2)) {
-    console.log('One turn via (r2, c1)');
-    return [[r1, c1], [r2, c1], [r2, c2]];
+  // 拐角点2: (r2, rc1)
+  if (isEmpty(r2, rc1) && lineClear(r1, rc1, r2, rc1) && lineClear(r2, rc1, r2, rc2)) {
+    return [[r1, rc1], [r2, rc1], [r2, rc2]];
   }
   
-  // 3. 两个转弯 - 水平→竖直→水平
-  console.log('Checking two turns horizontal...');
+  // 3. 两个转弯 - 走整行或整列
+  // 水平方向走到底再竖直
   for (let c = 0; c <= cols + 1; c++) {
-    if (c === c1 || c === c2) continue;
-    if (isEmpty(r1, c) && lineClear(r1, c1, r1, c) && isEmpty(r2, c) && lineClear(r2, c2, r2, c) && lineClear(r1, c, r2, c)) {
-      console.log('Two turns found via c=', c);
-      return [[r1, c1], [r1, c], [r2, c], [r2, c2]];
+    if (c === rc1 || c === rc2) continue;
+    if (isEmpty(r1, c) && lineClear(r1, rc1, r1, c) && isEmpty(r2, c) && lineClear(r2, rc2, r2, c) && lineClear(r1, c, r2, c)) {
+      return [[r1, rc1], [r1, c], [r2, c], [r2, rc2]];
     }
   }
   
-  // 4. 两个转弯 - 竖直→水平→竖直
-  console.log('Checking two turns vertical...');
+  // 竖直方向走到底再水平
   for (let r = 0; r <= rows + 1; r++) {
     if (r === r1 || r === r2) continue;
-    if (isEmpty(r, c1) && lineClear(r1, c1, r, c1) && isEmpty(r, c2) && lineClear(r2, c2, r, c2) && lineClear(r, c1, r, c2)) {
-      console.log('Two turns found via r=', r);
-      return [[r1, c1], [r, c1], [r, c2], [r2, c2]];
+    if (isEmpty(r, rc1) && lineClear(r1, rc1, r, rc1) && isEmpty(r, rc2) && lineClear(r2, rc2, r, rc2) && lineClear(r, rc1, r, rc2)) {
+      return [[r1, rc1], [r, rc1], [r, rc2], [r2, rc2]];
     }
   }
   
-  console.log('No path found');
   return null;
 }
 
-console.log('findPath defined...');
-
-// ============ 画连接线 ============
-function drawPath(path) {
+// ============ 画线 ============
+function drawLine(path) {
   if (!path || path.length < 2) return;
   
-  lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+  const gridEl = document.getElementById('grid');
+  const rect = gridEl.getBoundingClientRect();
+  const config = LEVELS[level];
+  const cellSize = 48;
+  const gap = 4;
+  const padding = 8;
   
-  const container = document.getElementById('matchGrid');
-  const rect = container.getBoundingClientRect();
-  const config = LEVELS[currentLevel];
-  const cellSize = 50;
-  const gap = 5;
+  const totalW = config.cols * cellSize + (config.cols - 1) * gap;
+  const totalH = config.rows * cellSize + (config.rows - 1) * gap;
+  const startX = rect.left + (rect.width - totalW) / 2;
+  const startY = rect.top + (rect.height - totalH) / 2;
   
-  const totalWidth = config.cols * cellSize + (config.cols - 1) * gap;
-  const totalHeight = config.rows * cellSize + (config.rows - 1) * gap;
-  const startX = rect.left + (rect.width - totalWidth) / 2;
-  const startY = rect.top + (rect.height - totalHeight) / 2;
+  const toXY = (r, c) => [
+    startX + (c - 1) * (cellSize + gap) + cellSize / 2,
+    startY + (r - 1) * (cellSize + gap) + cellSize / 2
+  ];
   
-  const toScreen = (r, c) => {
-    const gridX = startX + (c - 1) * (cellSize + gap) + cellSize / 2;
-    const gridY = startY + (r - 1) * (cellSize + gap) + cellSize / 2;
-    return [gridX, gridY];
-  };
-  
-  lineCtx.beginPath();
-  const [sx, sy] = toScreen(path[0][0], path[0][1]);
-  lineCtx.moveTo(sx, sy);
-  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath();
+  const [x1, y1] = toXY(path[0][0], path[0][1]);
+  ctx.moveTo(x1, y1);
   for (let i = 1; i < path.length; i++) {
-    const [ex, ey] = toScreen(path[i][0], path[i][1]);
-    lineCtx.lineTo(ex, ey);
+    const [x, y] = toXY(path[i][0], path[i][1]);
+    ctx.lineTo(x, y);
   }
-  
-  lineCtx.strokeStyle = '#ffd700';
-  lineCtx.lineWidth = 4;
-  lineCtx.lineCap = 'round';
-  lineCtx.lineJoin = 'round';
-  lineCtx.shadowColor = '#ffd700';
-  lineCtx.shadowBlur = 15;
-  lineCtx.stroke();
-  
-  setTimeout(() => lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height), 400);
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = '#ffd700';
+  ctx.shadowBlur = 10;
+  ctx.stroke();
 }
 
 function clearLine() {
-  lineCtx.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function updateProgress() {
-  const progress = ((totalPairs - remainingPairs) / totalPairs) * 100;
-  document.getElementById('progressFill').style.width = progress + '%';
-}
-
+// ============ 提示 ============
 function showHint() {
-  const unmatched = grid.filter(c => !c.empty && !c.matched);
-  
-  for (let i = 0; i < unmatched.length; i++) {
-    for (let j = i + 1; j < unmatched.length; j++) {
-      if (unmatched[i].logo === unmatched[j].logo) {
-        const idx1 = grid.indexOf(unmatched[i]);
-        const idx2 = grid.indexOf(unmatched[j]);
-        
-        const cell1 = document.querySelector(`.match-cell[data-idx="${idx1}"]`);
-        const cell2 = document.querySelector(`.match-cell[data-idx="${idx2}"]`);
-        
-        cell1.classList.add('hint-active');
-        cell2.classList.add('hint-active');
-        hintCells = [idx1, idx2];
-        
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i].empty) continue;
+    for (let j = i + 1; j < grid.length; j++) {
+      if (grid[j].empty) continue;
+      if (grid[i].logo === grid[j].logo && canConnect(i, j)) {
+        document.querySelector(`[data-idx="${i}"]`).classList.add('selected');
+        document.querySelector(`[data-idx="${j}"]`).classList.add('selected');
         setTimeout(() => {
-          cell1.classList.remove('hint-active');
-          cell2.classList.remove('hint-active');
-        }, 2000);
-        
+          document.querySelector(`[data-idx="${i}"]`).classList.remove('selected');
+          document.querySelector(`[data-idx="${j}"]`).classList.remove('selected');
+        }, 1500);
         return;
       }
     }
   }
 }
 
-function shuffleGrid() {
-  const config = LEVELS[currentLevel];
-  const unmatched = grid.filter(c => !c.empty && !c.matched);
-  const logos = unmatched.map(c => c.logo);
-  
-  logos.sort(() => Math.random() - 0.5);
-  
-  unmatched.forEach((cell, i) => {
-    cell.logo = logos[i];
-  });
-  
-  renderGrid();
-  
-  if (hintCells.length > 0) {
-    hintCells.forEach(idx => {
-      const el = document.querySelector(`.match-cell[data-idx="${idx}"]`);
-      if (el) el.classList.remove('hint-active');
-    });
-    hintCells = [];
+function shuffle() {
+  const cells = grid.filter(c => !c.empty);
+  const logos = cells.map(c => c.logo);
+  for (let i = logos.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [logos[i], logos[j]] = [logos[j], logos[i]];
   }
+  cells.forEach((c, i) => c.logo = logos[i]);
+  render();
 }
 
-function successLevel() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  
-  const timeUsed = Math.round((Date.now() - startTime) / 1000);
-  
-  document.getElementById('resultTitle').textContent = '🎉 通关成功！';
-  document.getElementById('statTime').textContent = timeUsed + 's';
-  document.getElementById('statMatches').textContent = matchCount;
-  document.getElementById('resultScreen').classList.remove('hidden');
-}
-
-function failLevel() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  
-  document.getElementById('resultTitle').textContent = '⏱️ 时间到！';
-  document.getElementById('statTime').textContent = '-';
-  document.getElementById('statMatches').textContent = matchCount;
-  document.getElementById('resultScreen').classList.remove('hidden');
-}
-
-function nextLevel() {
-  document.getElementById('resultScreen').classList.add('hidden');
-  currentLevel++;
-  if (currentLevel >= LEVELS.length) currentLevel = 0;
-  initLevel();
-}
-
-function backToStart() {
-  document.getElementById('resultScreen').classList.add('hidden');
-  document.getElementById('gameScreen').classList.add('hidden');
-  document.getElementById('startScreen').classList.remove('hidden');
-  clearInterval(timerInterval);
-  timerInterval = null;
-}
-
-console.log('All functions defined, calling init...');
 init();
-console.log('Init done');
 </script>
 </body>
 </html>
